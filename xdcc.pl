@@ -169,7 +169,7 @@ sub xdcc_send {
 	my $path = $file->{path};
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $id, $nick, $file->{fn});
 	$server->command("/DCC send $nick $path");
-	xdcc_message( $server, $nick, 'sending_file', $file->{fn} )
+	xdcc_message( $server, $nick, 'sending_file', $file->{fn} );
 	$sending = 1;
 }
 
