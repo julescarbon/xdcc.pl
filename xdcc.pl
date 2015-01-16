@@ -53,98 +53,116 @@ Irssi::theme_register([
 	'xdcc_request', '%R>>%n %_XDCC:%_ Sending the file %_$1%_ to %_$0%_',
 	'xdcc_print', '$[!-2]0 $[20]1 $2',
 
-	'xdcc_sending_file', '[%_XDCC:%_] Sending the file %_$1%_ to %_$0%_',
-	'xdcc_no_files',     '[%_XDCC:%_] No files offered',
-	'xdcc_print_file',   '[%_XDCC:%_] [%_$0%_] %_$1%_ ... %_$2%_',
-	'xdcc_queue_empty',  '[%_XDCC:%_] The queue is currently empty',
-	'xdcc_hr',           '[%_XDCC:%_] ----',
-	'xdcc_print_queue',  '[%_XDCC:%_] $0. $1 - [$2] $3',
-	'xdcc_file_dne',     '[%_XDCC:%_] File does not exist',
-	'xdcc_added_file',   '[%_XDCC:%_] Added [$0] $1',
-	'xdcc_removed_file', '[%_XDCC:%_] Removed [$0] $1',
-	'xdcc_reset',        '[%_XDCC:%_] Reset!',
+	'xdcc_sending_file',   '[%_XDCC:%_] Sending the file %_$1%_ to %_$0%_',
+	'xdcc_no_files',       '[%_XDCC:%_] No files offered',
+	'xdcc_print_file',     '[%_XDCC:%_] [%_$0%_] %_$1%_ ... %_$2%_',
+	'xdcc_queue_empty',    '[%_XDCC:%_] The queue is currently empty',
+	'xdcc_hr',             '[%_XDCC:%_] ----',
+	'xdcc_print_queue',    '[%_XDCC:%_] $0. $1 - [$2] $3',
+	'xdcc_file_not_found', '[%_XDCC:%_] File does not exist',
+	'xdcc_added_file',     '[%_XDCC:%_] Added [$0] $1',
+	'xdcc_removed_file',   '[%_XDCC:%_] Removed [$0] $1',
+	'xdcc_reset',          '[%_XDCC:%_] Reset!',
 
 	'xdcc_help', '$0',
 	'loaded', '%R>>%n %_Scriptinfo:%_ Loaded $0 version $1 by $2.'
 ]);
 
-my $m = {
-	'queue_is_full' => "The XDCC queue is currently full.",
+my $messages = {
+	'queue_is_full'    => "The XDCC queue is currently full.",
 	'no_files_offered' => "Sorry there's no warez today",
-	'queue_is_empty' => "The XDCC queue is currently empty.",
+	'queue_is_empty'   => "The XDCC queue is currently empty.",
+
+	'file_entry'       => '[%d] %s ... %s',
+	'file_count'       => '%d file%s',
+	'in_queue'         => 'You are #%d in queue, waiting for %s',
+	'queue_length'     => '%d request%s in queue',
+	'sending_file'     => 'Sending you %s ...!',
 };
+
+my $ctcp_version = 'BlAaaGhhee kHaLed RuLez l0l u0.1',
 
 sub ctcp_reply {
 	my ($server, $data, $nick, $address, $target) = @_;
 
-	my ($cmd, $index) = split (" ", lc($data), 3);
-
+	my ($ctcp, $cmd, $index) = split (" ", lc($data), 3);
+	
+	if ($ctcp eq "version") {
+		$server->command("^NCTCP $nick $data $ctcp_version");
+		Irssi::signal_stop();
+	}
+	else if ($ctcp ne "xdcc") { return; }
+	
 	switch ($cmd) {
-		case "get"   { xdcc_enqueue($server, $index, $nick) }
-		case "send"  { xdcc_enqueue($server, $index, $nick) }
-		case "list"  { xdcc_list($server, $index, $nick) }
+		case "get"   { xdcc_enqueue($server, $nick, $index) }
+		case "send"  { xdcc_enqueue($server, $nick, $index) }
+		case "list"  { xdcc_list($server, $nick) }
 		case "queue" { xdcc_queue($server, $nick) }
 	}
 
 	Irssi::signal_stop();
 }
+sub xdcc_msg {
+	my ($server, $nick, $msgname, @params) = @_;
+	my $msg = $messages->{$msgname};
+	$msg =~ s/%_/\x002/g;
+	$msg =~ s/%-/\x003/g;
+	$msg = sprintf $msg, @params;
+	$server->send_message( $nick, $msg, 1 );
+}
 sub xdcc_enqueue {
-	my ($server, $index, $nick) = @_;
-	$index = int $index;
-	$index -= 1;
+	my ($server, $nick, $index) = @_;
+	$id = int $index;
+	$id -= 1;
 	if (@queue == 0) {
-		return xdcc_send($server, $index, $nick);
+		return xdcc_send($server, $nick, $id);
 	}
 	else if (@queue > $queue_max) {
-		$server->send_message( $nick, $m->{'queue_is_full'}, 1 );
+		xdcc_message( $server, $nick, 'queue_is_full' );
 		return;
 	}
 	my $user = {
 		server => $server,
 		nick => $nick,
-		id => int $index
+		id => $id
 	};
 	push(@queue, $user);
+	xdcc_queue();
 }
 sub xdcc_list {
-	my ($server, $index, $nick) = @_;
+	my ($server, $nick) = @_;
 	if (scalar @files == 0) {
-		$server->send_message( $nick, $m->{'no_files_offered'}, 1 );
+		xdcc_message( $server, $nick, 'no_files_offered' );
 		return;
 	}
 	my $msg, $file;
 	for (my $n = 0; $n < @files ; ++$n) {
-		$msg = "[" . ($n+1) . "] " . $files[$n]->{fn} . " ... " . $files[$n]->{desc};
-		$server->send_message( $nick, $msg, 1 );
+		xdcc_message( $server, $nick, 'file_entry', $n+1, $files[$n]->{fn}, $files[$n]->{desc} );
 	}
-	$msg = (scalar @files) . " file" . ( scalar @files == 1 ? "" : "s" );
-	$server->send_message( $nick, $msg, 1 );
+	xdcc_message( $server, $nick, 'file_count', scalar @files, scalar @files == 1 ? "" : "s" );
 }
 sub xdcc_queue {
 	my ($server, $nick) = @_;
 	if (scalar @queue == 0) {
-		$server->send_message( $nick, $m->{'queue_is_empty'}, 1 );
+		xdcc_message( $server, $nick, 'queue_is_empty' );
 		return
 	}
 	my $msg;
 	for (my $n = 0; $n < @queue; ++$n) {
 		if ($queue[$n]->{nick} == $nick) {
-			$msg = "You are #" . ($n+1) . ", waiting for " . $files->{$queue[$n]->{id}}->{fn};
-			$server->send_message( $nick, $msg, 1 );
+			xdcc_message( $server, $nick, 'in_queue', $n+1, $files->{$queue[$n]->{id}}->{fn} )
 			# break
 		}
 	}
-	$msg = (scalar @files) . " in queue";
-	$server->send_message( $nick, $msg, 1 );
+	xdcc_message( $server, $nick, 'queue_length', scalar @queue, scalar @queue == 1 ? "" : "s" )
 }
 sub xdcc_send {
-	my ($server, $index, $nick) = @_;
-	my $file = $files[$index];
+	my ($server, $nick, $id) = @_;
+	my $file = $files[$id];
 	my $path = $file->{path};
-	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $index, $nick, $file->{fn});
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $id, $nick, $file->{fn});
 	$server->command("/DCC send $nick $path");
-	$msg = "Sending you " . $file->{fn} . " ...!";
-	$server->send_message( $nick, $msg, 1 );
+	xdcc_message( $server, $nick, 'sending_file', $file->{fn} )
 }
 
 # client stuff
@@ -170,7 +188,7 @@ sub xdcc_report {
 sub xdcc_add {
 	my ($path, $desc) = @_;
 	if (! -e $path) {
-		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_file_dne');
+		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_file_not_found');
 		return;
 	}
 	
@@ -186,7 +204,7 @@ sub xdcc_add {
 		desc => $desc,
 	};
 	
-	push(@files, $file)
+	push(@files, $file);
 
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_added_file', $id+1, $fn);
 }
@@ -234,6 +252,11 @@ sub xdcc {
 }
 
 # listen for xdcc end/cancel/close
+# "dcc created", DCC_REC
+# "dcc destroyed", DCC_REC
+# "dcc connected", DCC_REC
+# "dcc rejecting", DCC_REC
+# "dcc closed", DCC_REC
 Irssi::signal_add('default ctcp msg', 'ctcp_reply');
 Irssi::command_bind('xdcc', 'xdcc');
 Irssi::command_set_options('xdcc','add del list reset help');
