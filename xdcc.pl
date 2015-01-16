@@ -187,7 +187,7 @@ sub xdcc_report {
 }
 sub xdcc_add {
 	my ($path, $desc) = @_;
-	if ($path[0] == "~") {
+	if (substr($path, 0, 1) eq "~") {
 		$path =~ s/^~//;
 		$path = $ENV{"HOME"} . $path;
 	}
