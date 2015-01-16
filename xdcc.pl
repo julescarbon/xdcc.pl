@@ -11,7 +11,7 @@ $VERSION = "1.00";
 	contact     => 'jules@okfoc.us',
 	name        => 'xdcc.pl',
 	description => 'This script sets up a little XDCC server.',
-	license     => '(c) JOLLO proprietary intellectual property used with permission',
+	license     => 'Jollo LNT license',
 	url         => 'http://asdf.us/xdcc/xdcc.pl',
 	changed     => 'Wed Jan 15 23:55:44 EST 2015',
 );
