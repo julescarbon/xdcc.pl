@@ -2,7 +2,6 @@
 
 use strict;
 use Irssi;
-use Switch;
 use vars qw($VERSION %IRSSI);
 
 $VERSION = "1.00";
@@ -17,7 +16,8 @@ $VERSION = "1.00";
 	changed     => 'Wed Jan 15 23:55:44 EST 2015',
 );
 
-my @files, @queue;
+my @files;
+my @queue;
 
 my $irssidir = Irssi::get_irssi_dir();
 
@@ -93,12 +93,10 @@ sub ctcp_reply {
 	}
 	else if ($ctcp ne "xdcc") { return; }
 	
-	switch ($cmd) {
-		case "get"   { xdcc_enqueue($server, $nick, $index) }
-		case "send"  { xdcc_enqueue($server, $nick, $index) }
-		case "list"  { xdcc_list($server, $nick) }
-		case "queue" { xdcc_queue($server, $nick) }
-	}
+	   if ($cmd eq "get")   { xdcc_enqueue($server, $nick, $index) }
+	elsif ($cmd eq "send")  { xdcc_enqueue($server, $nick, $index) }
+	elsif ($cmd eq "list")  { xdcc_list($server, $nick) }
+	elsif ($cmd eq "queue") { xdcc_queue($server, $nick) }
 
 	Irssi::signal_stop();
 }
@@ -112,7 +110,7 @@ sub xdcc_msg {
 }
 sub xdcc_enqueue {
 	my ($server, $nick, $index) = @_;
-	$id = int $index;
+	my $id = int $index;
 	$id -= 1;
 	if (@queue == 0) {
 		return xdcc_send($server, $nick, $id);
@@ -241,14 +239,12 @@ sub xdcc {
 
 	$cmd = lc($cmd);
 
-	switch ($cmd) {
-		case "-add"   { xdcc_add($fn, desc) }
-		case "-del"   { xdcc_remove($fn) }
-		case "-list"  { xdcc_report() }
-		case "-reset" { xdcc_reset() }
-		case "-help"  { xdcc_help() }
-		else          { xdcc_report() }
-	}
+	   if ($cmd eq "-add")   { xdcc_add($fn, desc) }
+	elsif ($cmd eq "-del")   { xdcc_remove($fn) }
+	elsif ($cmd eq "-list")  { xdcc_report() }
+	elsif ($cmd eq "-reset") { xdcc_reset() }
+	elsif ($cmd eq "-help")  { xdcc_help() }
+	 else                    { xdcc_report() }
 }
 sub dcc_created {
 	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc created');
