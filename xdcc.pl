@@ -19,6 +19,8 @@ $VERSION = "1.00";
 my @files;
 my @queue;
 
+my $queue_max = 10;
+
 my $irssidir = Irssi::get_irssi_dir();
 
 my $help = <<EOF;
@@ -133,7 +135,7 @@ sub xdcc_list {
 		xdcc_message( $server, $nick, 'no_files_offered' );
 		return;
 	}
-	my $msg, $file;
+	my ($msg, $file);
 	for (my $n = 0; $n < @files ; ++$n) {
 		xdcc_message( $server, $nick, 'file_entry', $n+1, $files[$n]->{fn}, $files[$n]->{desc} );
 	}
@@ -263,11 +265,11 @@ sub dcc_closed {
 }
 
 # listen for xdcc end/cancel/close
-Irssi::signal_add('dcc created',   dcc_created);
-Irssi::signal_add('dcc destroyed', dcc_destroyed);
-Irssi::signal_add('dcc connected', dcc_connected);
-Irssi::signal_add('dcc rejecting', dcc_rejecting);
-Irssi::signal_add('dcc closed',    dcc_closed);
+Irssi::signal_add('dcc created',      'dcc_created');
+Irssi::signal_add('dcc destroyed',    'dcc_destroyed');
+Irssi::signal_add('dcc connected',    'dcc_connected');
+Irssi::signal_add('dcc rejecting',    'dcc_rejecting');
+Irssi::signal_add('dcc closed',       'dcc_closed');
 Irssi::signal_add('default ctcp msg', 'ctcp_reply');
 Irssi::command_bind('xdcc', 'xdcc');
 Irssi::command_set_options('xdcc','add del list reset help');
