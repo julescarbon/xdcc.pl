@@ -131,7 +131,7 @@ sub xdcc_enqueue {
 		return;
 	}
 	push(@queue, $request);
-	xdcc_queue();
+	xdcc_queue($server, $nick);
 }
 sub xdcc_list {
 	my ($server, $nick) = @_;
