@@ -79,7 +79,7 @@ my $messages = {
 
 	'file_entry'       => '[%d] %s ... %s',
 	'file_count'       => '%d file%s',
-	'in_queue'         => 'You are #%d in queue, waiting for %s',
+	'in_queue'         => 'You are #%d in queue. Requested [%d] %s',
 	'queue_length'     => '%d request%s in queue',
 	'sending_file'     => 'Sending you %s ...!',
 };
@@ -154,7 +154,7 @@ sub xdcc_queue {
 	my $msg;
 	for (my $n = 0; $n < @queue; ++$n) {
 		if ($queue[$n]->{nick} == $nick) {
-			xdcc_message( $server, $nick, 'in_queue', $n+1, $files[$queue[$n]->{id}]->{fn} )
+			xdcc_message( $server, $nick, 'in_queue', $n+1, $queue[$n]->{id}+1, $files[$queue[$n]->{id}]->{fn} )
 			# break
 		}
 	}
