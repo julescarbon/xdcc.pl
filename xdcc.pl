@@ -80,7 +80,7 @@ my $messages = {
 	'sending_file'     => 'Sending you %s ...!',
 };
 
-my $ctcp_version = 'BlAaaGhhee kHaLed RuLez l0l u0.1',
+my $ctcp_version = 'BlAaaGhhee kHaLed RuLez l0l u0.1';
 
 sub ctcp_reply {
 	my ($server, $data, $nick, $address, $target) = @_;
