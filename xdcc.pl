@@ -22,6 +22,7 @@ my @queue;
 my $queue_max = 10;
 
 my $irssidir = Irssi::get_irssi_dir();
+my $sending = false;
 
 my $help = <<EOF;
 
@@ -122,7 +123,7 @@ sub xdcc_enqueue {
 		id => $id
 	};
 
-	if (@queue == 0) {
+	if (! $sending && @queue == 0) {
 		return xdcc_send($request);
 	}
 	elsif (@queue > $queue_max) {
@@ -169,6 +170,7 @@ sub xdcc_send {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $id, $nick, $file->{fn});
 	$server->command("/DCC send $nick $path");
 	xdcc_message( $server, $nick, 'sending_file', $file->{fn} )
+	$sending = true;
 }
 
 # client stuff
@@ -263,6 +265,7 @@ sub dcc_created {
 }
 sub dcc_destroyed {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc destroyed');
+	$sending = false;
 	if (@queue == 0) { return; }
 	my $request = shift @queue;
 	xdcc_send($request);
