@@ -150,7 +150,7 @@ sub xdcc_queue {
 	my $msg;
 	for (my $n = 0; $n < @queue; ++$n) {
 		if ($queue[$n]->{nick} == $nick) {
-			xdcc_message( $server, $nick, 'in_queue', $n+1, $files->{$queue[$n]->{id}}->{fn} )
+			xdcc_message( $server, $nick, 'in_queue', $n+1, $files[$queue[$n]->{id}]->{fn} )
 			# break
 		}
 	}
