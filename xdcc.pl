@@ -115,19 +115,21 @@ sub xdcc_enqueue {
 	my ($server, $nick, $index) = @_;
 	my $id = int $index;
 	$id -= 1;
+
+	my $request = {
+		server => $server,
+		nick => $nick,
+		id => $id
+	};
+
 	if (@queue == 0) {
-		return xdcc_send($server, $nick, $id);
+		return xdcc_send($request);
 	}
 	elsif (@queue > $queue_max) {
 		xdcc_message( $server, $nick, 'queue_is_full' );
 		return;
 	}
-	my $user = {
-		server => $server,
-		nick => $nick,
-		id => $id
-	};
-	push(@queue, $user);
+	push(@queue, $request);
 	xdcc_queue();
 }
 sub xdcc_list {
@@ -158,7 +160,10 @@ sub xdcc_queue {
 	xdcc_message( $server, $nick, 'queue_length', scalar @queue, scalar @queue == 1 ? "" : "s" )
 }
 sub xdcc_send {
-	my ($server, $nick, $id) = @_;
+	my ($request) = @_;
+	my $server = $request->{server};
+	my $nick = $request->{nick};
+	my $id = $request->{id};
 	my $file = $files[$id];
 	my $path = $file->{path};
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $id, $nick, $file->{fn});
@@ -258,6 +263,9 @@ sub dcc_created {
 }
 sub dcc_destroyed {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc destroyed');
+	if (@queue == 0) { return; }
+	my $request = shift @queue;
+	xdcc_send($request);
 }
 sub dcc_connected {
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc connected');
