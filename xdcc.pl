@@ -52,15 +52,26 @@ EOF
 Irssi::theme_register([
 	'xdcc_request', '%R>>%n %_XDCC:%_ Sending the file %_$1%_ to %_$0%_',
 	'xdcc_print', '$[!-2]0 $[20]1 $2',
-	'xdcc_no_files_shared', 'No files shared',
+
+	'xdcc_sending_file', '[%_XDCC:%_] Sending the file %_$1%_ to %_$0%_',
+	'xdcc_no_files',     '[%_XDCC:%_] No files offered',
+	'xdcc_print_file',   '[%_XDCC:%_] [%_$0%_] %_$1%_ ... %_$2%_',
+	'xdcc_queue_empty',  '[%_XDCC:%_] The queue is currently empty',
+	'xdcc_hr',           '[%_XDCC:%_] ----',
+	'xdcc_print_queue',  '[%_XDCC:%_] $0. $1 - [$2] $3',
+	'xdcc_file_dne',     '[%_XDCC:%_] File does not exist',
+	'xdcc_added_file',   '[%_XDCC:%_] Added [$0] $1',
+	'xdcc_removed_file', '[%_XDCC:%_] Removed [$0] $1',
+	'xdcc_reset',        '[%_XDCC:%_] Reset!',
+
 	'xdcc_help', '$0',
 	'loaded', '%R>>%n %_Scriptinfo:%_ Loaded $0 version $1 by $2.'
 ]);
 
 my $m = {
-	'queue_is_full' => "",
-	'no_files_offered' => "",
-	'queue_is_empty' => "",
+	'queue_is_full' => "The XDCC queue is currently full.",
+	'no_files_offered' => "Sorry there's no warez today",
+	'queue_is_empty' => "The XDCC queue is currently empty.",
 };
 
 sub ctcp_reply {
@@ -132,14 +143,14 @@ sub xdcc_send {
 	my $path = $file->{path};
 	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_sending_file', $index, $nick, $file->{fn});
 	$server->command("/DCC send $nick $path");
-	$msg = "Sending you " . $file->{fn};
+	$msg = "Sending you " . $file->{fn} . " ...!";
 	$server->send_message( $nick, $msg, 1 );
 }
 
 # client stuff
 sub xdcc_report {
 	if (scalar @files == 0) {
-		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_files_empty');
+		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_no_files');
 	}
 	else {
 		for (my $n = 0; $n < @files ; ++$n) {
@@ -159,7 +170,7 @@ sub xdcc_report {
 sub xdcc_add {
 	my ($path, $desc) = @_;
 	if (! -e $path) {
-		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_bad_filename');
+		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_file_dne');
 		return;
 	}
 	
@@ -191,9 +202,12 @@ sub xdcc_del {
 			# send a message to the user that the file is no longer being offered
 			splice(@queue, $n, 1);
 		}
+		else if ($queue[$n]->{id} > $id) {
+			--$queue[$n]->{id};
+		}
 	}
 
-	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_removed_file', $file->{fn});
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_removed_file', $id+1, $file->{fn});
 }
 sub xdcc_reset {
 	@files = ();
