@@ -91,7 +91,7 @@ sub ctcp_reply {
 		$server->command("^NCTCP $nick $data $ctcp_version");
 		Irssi::signal_stop();
 	}
-	else if ($ctcp ne "xdcc") { return; }
+	elsif ($ctcp ne "xdcc") { return; }
 	
 	   if ($cmd eq "get")   { xdcc_enqueue($server, $nick, $index) }
 	elsif ($cmd eq "send")  { xdcc_enqueue($server, $nick, $index) }
@@ -115,7 +115,7 @@ sub xdcc_enqueue {
 	if (@queue == 0) {
 		return xdcc_send($server, $nick, $id);
 	}
-	else if (@queue > $queue_max) {
+	elsif (@queue > $queue_max) {
 		xdcc_message( $server, $nick, 'queue_is_full' );
 		return;
 	}
@@ -218,7 +218,7 @@ sub xdcc_del {
 			# send a message to the user that the file is no longer being offered
 			splice(@queue, $n, 1);
 		}
-		else if ($queue[$n]->{id} > $id) {
+		elsif ($queue[$n]->{id} > $id) {
 			--$queue[$n]->{id};
 		}
 	}
