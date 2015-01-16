@@ -55,7 +55,7 @@ Irssi::theme_register([
 	'xdcc_request', '%R>>%n %_XDCC:%_ Sending the file %_$1%_ to %_$0%_',
 	'xdcc_print', '$[!-2]0 $[20]1 $2',
 
-	'xdcc_sending_file',   '[%_XDCC:%_] Sending the file %_$1%_ to %_$0%_',
+	'xdcc_sending_file',   '[%_XDCC:%_] Sending the file [$0] %_$2%_ to %_$1%_',
 	'xdcc_no_files',       '[%_XDCC:%_] No files offered',
 	'xdcc_print_file',     '[%_XDCC:%_] [%_$0%_] %_$1%_ ... %_$2%_',
 	'xdcc_queue_empty',    '[%_XDCC:%_] The queue is currently empty',
@@ -65,6 +65,7 @@ Irssi::theme_register([
 	'xdcc_added_file',     '[%_XDCC:%_] Added [$0] $1',
 	'xdcc_removed_file',   '[%_XDCC:%_] Removed [$0] $1',
 	'xdcc_reset',          '[%_XDCC:%_] Reset!',
+	'xdcc_log',            '[%_XDCC:%_] $0',
 
 	'xdcc_help', '$0',
 	'loaded', '%R>>%n %_Scriptinfo:%_ Loaded $0 version $1 by $2.'
@@ -253,19 +254,19 @@ sub xdcc {
 	 else                    { xdcc_report() }
 }
 sub dcc_created {
-	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc created');
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc created');
 }
 sub dcc_destroyed {
-	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc destroyed');
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc destroyed');
 }
 sub dcc_connected {
-	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc connected');
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc connected');
 }
 sub dcc_rejecting {
-	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc rejecting');
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc rejecting');
 }
 sub dcc_closed {
-	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc closed');
+	Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc closed');
 }
 
 # listen for xdcc end/cancel/close
