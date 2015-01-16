@@ -187,6 +187,10 @@ sub xdcc_report {
 }
 sub xdcc_add {
 	my ($path, $desc) = @_;
+	if ($path[0] == "~") {
+		$path =~ s/^~//;
+		$path = $ENV{"HOME"} . $path;
+	}
 	if (! -e $path) {
 		Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_file_not_found');
 		return;
