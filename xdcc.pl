@@ -241,7 +241,7 @@ sub xdcc {
 
 	$cmd = lc($cmd);
 
-	   if ($cmd eq "-add")   { xdcc_add($fn, desc) }
+	   if ($cmd eq "-add")   { xdcc_add($fn, $desc) }
 	elsif ($cmd eq "-del")   { xdcc_remove($fn) }
 	elsif ($cmd eq "-list")  { xdcc_report() }
 	elsif ($cmd eq "-reset") { xdcc_reset() }
