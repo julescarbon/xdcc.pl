@@ -250,13 +250,28 @@ sub xdcc {
 		else          { xdcc_report() }
 	}
 }
+sub dcc_created {
+	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc created');
+}
+sub dcc_destroyed {
+	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc destroyed');
+}
+sub dcc_connected {
+	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc connected');
+}
+sub dcc_rejecting {
+	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc rejecting');
+}
+sub dcc_closed {
+	Irssi::print(MSGLEVEL_CLIENTCRAP, '[xdcc] dcc closed');
+}
 
 # listen for xdcc end/cancel/close
-# "dcc created", DCC_REC
-# "dcc destroyed", DCC_REC
-# "dcc connected", DCC_REC
-# "dcc rejecting", DCC_REC
-# "dcc closed", DCC_REC
+Irssi::signal_add('dcc created',   dcc_created);
+Irssi::signal_add('dcc destroyed', dcc_destroyed);
+Irssi::signal_add('dcc connected', dcc_connected);
+Irssi::signal_add('dcc rejecting', dcc_rejecting);
+Irssi::signal_add('dcc closed',    dcc_closed);
 Irssi::signal_add('default ctcp msg', 'ctcp_reply');
 Irssi::command_bind('xdcc', 'xdcc');
 Irssi::command_set_options('xdcc','add del list reset help');
