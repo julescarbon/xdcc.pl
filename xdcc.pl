@@ -102,7 +102,7 @@ sub ctcp_reply {
 
 	Irssi::signal_stop();
 }
-sub xdcc_msg {
+sub xdcc_message {
 	my ($server, $nick, $msgname, @params) = @_;
 	my $msg = $messages->{$msgname};
 	$msg =~ s/%_/\x002/g;
