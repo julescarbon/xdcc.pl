@@ -39,10 +39,10 @@ my $help_local = <<EOF;
 Usage:
 /XDCC [-add <filename> <description>] [-del <id>] [-list] [-stats] [-help]
 
--add:     Add a file to our XDCC server.
--del:     Remove a file from the offerings.
--list:    Display the XDCC list (default).
--reset:   Reset the file list and the queue.
+-add:     Add a file to our XDCC server
+-del:     Remove a file from the offerings
+-list:    Display the XDCC list (default)
+-reset:   Reset the file list and the queue
 -stats:   Statistics for this session
 -enable:  Enable the XDCC server
 -disable: Disable the XDCC server
@@ -157,8 +157,13 @@ sub xdcc_enqueue {
     id => $id
   };
 
+  if (scalar @files == 0) {
+    xdcc_message( $server, $nick, 'no_files_offered' );
+    return;
+  }
   if (! $sending && @queue == 0) {
-    return xdcc_send($request);
+    xdcc_send($request);
+    return;
   }
   elsif (@queue > $queue_max) {
     xdcc_message( $server, $nick, 'queue_is_full' );
