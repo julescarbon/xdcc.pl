@@ -68,12 +68,12 @@ EOF
 
 my $help_remote = <<EOF;
 [%_XDCC%_] plugin $VERSION
-/ctcp %nick XDCC [send %_N%_] [list] [queue] [version] [help] [about]
+/ctcp %nick XDCC [get %_N%_] [list] [queue] [version] [help] [about]
 EOF
 
 my $help_about = <<EOF;
-[%_XDCC%_] plugin $VERSION by $IRSSI{authors}
-[%_XDCC%_] $IRSSI{url}
+[%_XDCC%_] irssi plugin $VERSION by $IRSSI{authors}
+[%_XDCC%_] more info: $IRSSI{url}
 EOF
 
 Irssi::theme_register([
@@ -102,7 +102,7 @@ my $messages = {
 
   'file_entry'         => '[%_XDCC%_] [%d] %s ... %s',
   'file_count'         => '[%_XDCC%_] %d file%s',
-  'file_help_get'      => '[%_XDCC%_] Type %_/ctcp %nick xdcc send N%_ to request a file',
+  'file_help_get'      => '[%_XDCC%_] Type %_/ctcp %nick xdcc get N%_ to request a file',
 
   'in_queue'           => '[%_XDCC%_] You are #%d in queue. Requested [%d] %s',
   'queue_length'       => '[%_XDCC%_] %d request%s in queue',
@@ -236,8 +236,8 @@ sub xdcc_report {
     for (my $n = 0; $n < @files ; ++$n) {
       Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_print_queue', $n+1, $queue[$n]->{nick}, $queue[$n]->{id}, $files[$queue[$n]->{id}-1]->{fn});
     }
+    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_hr');
   }
-  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_hr');
 }
 sub xdcc_stats {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', "plugin version", $VERSION);
