@@ -3,5 +3,5 @@ xdcc
 
 xdcc script for irssi
 
-(read all about it)[http://asdf.us/xdcc/]
+[read all about it](http://asdf.us/xdcc/)
 
