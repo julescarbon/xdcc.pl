@@ -1,0 +1,66 @@
+<html style="background:#bbb;">
+<body style="margin: 100px auto; padding: 100px; max-width: 800px; background:#fff;">
+
+<h1>xdcc.pl</h1>
+
+XDCC bot script for irssi.
+<p>
+
+Download it here: <a href="xdcc.pl" style="color:blue!important"><b>xdcc.pl</b></a>
+<p>
+
+<h2>Usage</h2>
+
+<pre>/XDCC [-add <i>filename</i> <i>description</i>] [-del <i>id</i>] [-list] [-stats] [-enable] [-disable] [-help]
+
+-add:     Add a file to our XDCC server
+-del:     Remove a file from the offerings
+-list:    Display the XDCC list (default)
+-reset:   Reset the file list and the queue
+-stats:   Statistics for this session
+-enable:  Enable the XDCC server
+-disable: Disable the XDCC server
+-help:    Display this help.</pre>
+
+Examples:
+
+<pre>/xdcc -add sally.gif Jollo in his native habitat :)
+/xdcc -add jollo.mp3 Distant cry of the Jollo, 5:43 am
+/xdcc -del 1
+/xdcc -stats</pre>
+
+<h3>CTCP XDCC Interface</h3>
+
+People can request files from you using these CTCP commands:
+
+<pre>/ctcp <i>nick</i> XDCC list
+/ctcp <i>nick</i> XDCC get 1
+/ctcp <i>nick</i> XDCC batch 2-4       <i># request multiple files</i>
+/ctcp <i>nick</i> XDCC remove 3        <i># remove from queue</i>
+/ctcp <i>nick</i> XDCC queue
+/ctcp <i>nick</i> XDCC help
+/ctcp <i>nick</i> XDCC about</pre>
+
+<h3>Queue</h3>
+
+<ul>
+<li> Only one file will be sent at a time.
+<li> Additional requests are added to a queue, max 99 slots.
+<li> If the requesting user goes afk and does not accept the file, the transfer will time out and advance the queue.
+</ul>
+
+<h3>Tips & Tricks</h3>
+
+<ul>
+<li> Turn on DCC autoget - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
+<li> The script will look for files in <tt><i>dcc_upload_path</i></tt>. Filenames should not contain spaces.
+</ul>
+
+<h3>Thanks</h3>
+
+Greetings to all on #sally and thanks as always to Khaled Mardam-Bey for inventing mIRCScript
+<p>
+
+<hr>
+<i>Last updated 18 January 2015 &mdash; <a href="/dither/">Julie LaLa</a></i>
+
