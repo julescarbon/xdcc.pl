@@ -4,7 +4,7 @@ use strict;
 use Irssi;
 use vars qw($VERSION %IRSSI);
 
-$VERSION = "1.02";
+$VERSION = "1.03";
 
 %IRSSI = (
   authors     => 'Julie LaLa',
@@ -59,7 +59,8 @@ People can request files from you using these commands:
 /ctcp <nickname> XDCC list
 /ctcp <nickname> XDCC get 1
 /ctcp <nickname> XDCC batch 2-4
-/ctcp <nickname> XDCC queue
+/ctcp <nickname> XDCC remove 3
+/ctcp <nickname> XDCC help
 
 Only one file will be sent at a time.
 Additional requests are added to a queue.
@@ -189,13 +190,14 @@ sub xdcc_batch {
   my ($from, $to) = split("-", $index, 2);
   $from = int $from;
   $to = int $to;
-  if ($from > $to || $from < 1 || $to < 1 || $from > @files || $to > @files) {
+  if ($from >= $to || $from < 1 || $to < 1 || $from > @files || $to > @files) {
     xdcc_message( $server, $nick, 'illegal_index' );
     return;
   }
   for (var $i = $from; $i <= $to; $i++) {
     xdcc_enqueue($server, $nick, $i);
   }
+  xdcc_message($dcc->{server}, $dcc->{nick}, 'xdcc_autoget_tip');
 }
 sub xdcc_remove {
   my ($server, $nick, $index) = @_;
