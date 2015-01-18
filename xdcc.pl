@@ -4,7 +4,7 @@ use strict;
 use Irssi;
 use vars qw($VERSION %IRSSI);
 
-$VERSION = "1.01";
+$VERSION = "1.02";
 
 %IRSSI = (
   authors     => 'Julie LaLa',
@@ -19,8 +19,8 @@ $VERSION = "1.01";
 my @files;
 my @queue;
 
-my $queue_max = 10;
-my $bother_delay = 10000;
+my $queue_max = 99;
+my $bother_delay = 9999;
 
 my $irssidir = Irssi::get_irssi_dir();
 my $dcc_upload_path = Irssi::settings_get_str('dcc_upload_path');
@@ -58,6 +58,7 @@ Note: The default parameter is -list.
 People can request files from you using these commands:
 /ctcp <nickname> XDCC list
 /ctcp <nickname> XDCC get 1
+/ctcp <nickname> XDCC batch 2-4
 /ctcp <nickname> XDCC queue
 
 Only one file will be sent at a time.
@@ -68,7 +69,7 @@ EOF
 
 my $help_remote = <<EOF;
 [%_XDCC%_] plugin $VERSION
-/ctcp %nick XDCC [get %_N%_] [list] [queue] [version] [help] [about]
+/ctcp %nick XDCC [get %_X%_] [batch %_X-Y%_] [remove %_X%_] [list] [queue] [version] [help] [about]
 EOF
 
 my $help_about = <<EOF;
@@ -99,6 +100,7 @@ my $messages = {
   'queue_is_full'      => "[%_XDCC%_] The XDCC queue is currently full.",
   'queue_is_empty'     => "[%_XDCC%_] The XDCC queue is currently empty.",
   'no_files_offered'   => "[%_XDCC%_] Sorry, there's no warez today",
+  'illegal_index'      => "[%_XDCC%_] Bad index for batch request",
 
   'file_entry'         => '[%_XDCC%_] [%d] %s ... %s',
   'file_count'         => '[%_XDCC%_] %d file%s',
@@ -110,7 +112,9 @@ my $messages = {
   'file_help_send'     => '[%_XDCC%_] Type %_/dcc %nick get%_ to accept the file',
 
   'xdcc_final_warning' => '[%_XDCC%_] This is your last warning!',
-  'xdcc_cancelled'     => '[%_XDCC%_] Your download has been cancelled for inactivity.',
+  'xdcc_inactive'      => '[%_XDCC%_] The DCC transfer has been cancelled for inactivity.',
+  'xdcc_removed'       => '[%_XDCC%_] Your request has been removed.',
+  'xdcc_file_removed'  => '[%_XDCC%_] The file you requested [%d] has been removed.',
   'xdcc_autoget_tip'   => '[%_XDCC%_] Tip: in irssi, type %_/set dcc_autoget ON%_',
 
   'xdcc_help'          => $help_remote,
@@ -118,6 +122,7 @@ my $messages = {
   'xdcc_version'       => "[%_XDCC%_] plugin $VERSION",
 };
 
+# Public XDCC request API
 sub ctcp_reply {
   my ($server, $data, $nick, $address, $target) = @_;
 
@@ -126,6 +131,9 @@ sub ctcp_reply {
   if ($disabled || $ctcp ne "xdcc") { return; }
      if ($cmd eq "get")     { xdcc_enqueue($server, $nick, $index) }
   elsif ($cmd eq "send")    { xdcc_enqueue($server, $nick, $index) }
+  elsif ($cmd eq "batch")   { xdcc_batch($server, $nick, $index) }
+  elsif ($cmd eq "info")    { xdcc_info($server, $nick, $index) }
+  elsif ($cmd eq "remove")  { xdcc_remove($server, $nick, $index) }
   elsif ($cmd eq "queue")   { xdcc_queue($server, $nick) }
   elsif ($cmd eq "list")    { xdcc_list($server, $nick) }
   elsif ($cmd eq "version") { xdcc_message($server, $nick, 'xdcc_version') }
@@ -172,6 +180,45 @@ sub xdcc_enqueue {
   push(@queue, $request);
   xdcc_queue($server, $nick);
 }
+sub xdcc_batch {
+  my ($server, $nick, $index) = @_;
+  if ($index !~ /-/) {
+    xdcc_message( $server, $nick, 'illegal_index' );
+    return;
+  }
+  my ($from, $to) = split("-", $index, 2);
+  $from = int $from;
+  $to = int $to;
+  if ($from > $to || $from < 1 || $to < 1 || $from > @files || $to > @files) {
+    xdcc_message( $server, $nick, 'illegal_index' );
+    return;
+  }
+  for (var $i = $from; $i <= $to; $i++) {
+    xdcc_enqueue($server, $nick, $i);
+  }
+}
+sub xdcc_remove {
+  my ($server, $nick, $index) = @_;
+  my $id = int $index;
+  $id -= 1;
+
+  my $removed;
+  for (my $n = @queue; $n >= 0; --$n) {
+    if ($queue[$n]->{nick} eq $nick && ($id == -1 || queue[$n]->{id} == $id)) {
+      $removed = splice(@queue, $n, 1);
+    }
+  }
+  if ($removed) {
+    xdcc_message( $server, $nick, 'xdcc_removed' );
+  }
+}
+sub xdcc_info {
+  my ($server, $nick, $index) = @_;
+  my $id = int $index;
+  if (! $id) return;
+  $id -= 1;
+  # get stat data
+}
 sub xdcc_list {
   my ($server, $nick) = @_;
   if (scalar @files == 0) {
@@ -193,7 +240,7 @@ sub xdcc_queue {
   }
   my $msg;
   for (my $n = 0; $n < @queue; ++$n) {
-    if ($queue[$n]->{nick} == $nick) {
+    if ($queue[$n]->{nick} eq $nick) {
       xdcc_message( $server, $nick, 'in_queue', $n+1, $queue[$n]->{id}+1, $files[$queue[$n]->{id}]->{fn} )
       # break
     }
@@ -218,7 +265,7 @@ sub xdcc_send {
   $stats->{files}->{$file->{fn}}++;
 }
 
-# client stuff
+# XDCC command control
 sub xdcc_report {
   if (scalar @files == 0) {
     Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_no_files');
@@ -292,13 +339,14 @@ sub xdcc_del {
   my ($id) = @_;
   $id = (int $id) - 1;
   my $file = $files[$id];
+  my $req;
 
   splice(@files, $id, 1);
 
   for (my $n = @queue; $n >= 0; --$n) {
     if ($queue[$n]->{id} == $id) {
-      # send a message to the user that the file is no longer being offered
-      splice(@queue, $n, 1);
+      $req = splice(@queue, $n, 1);
+      xdcc_message( $req->{server}, $req->{nick}, 'xdcc_file_removed', $n );
     }
     elsif ($queue[$n]->{id} > $id) {
       --$queue[$n]->{id};
@@ -336,6 +384,7 @@ sub xdcc {
    else                     { xdcc_report() }
 }
 
+# DCC management
 sub dcc_created {
   my ($dcc) = @_;
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc created');
@@ -356,7 +405,7 @@ sub xdcc_bother {
   }
   else {
     Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'Send to ' . $dcc->{nick} . ' timed out.');
-    xdcc_message($dcc->{server}, $dcc->{nick}, 'xdcc_cancelled');
+    xdcc_message($dcc->{server}, $dcc->{nick}, 'xdcc_inactive');
     xdcc_message($dcc->{server}, $dcc->{nick}, 'xdcc_autoget_tip');
     $dcc->destroy();
     undef $timeout;
