@@ -4,7 +4,7 @@ use strict;
 use Irssi;
 use vars qw($VERSION %IRSSI);
 
-$VERSION = "1.01";
+$VERSION = "1.02";
 
 %IRSSI = (
   authors     => 'Julie LaLa',
@@ -58,6 +58,7 @@ Note: The default parameter is -list.
 People can request files from you using these commands:
 /ctcp <nickname> XDCC list
 /ctcp <nickname> XDCC get 1
+/ctcp <nickname> XDCC batch 2-4
 /ctcp <nickname> XDCC queue
 
 Only one file will be sent at a time.
@@ -68,7 +69,7 @@ EOF
 
 my $help_remote = <<EOF;
 [%_XDCC%_] plugin $VERSION
-/ctcp %nick XDCC [get %_N%_] [list] [queue] [version] [help] [about]
+/ctcp %nick XDCC [get %_X%_] [batch %_X-Y%_] [remove %_X%_] [list] [queue] [version] [help] [about]
 EOF
 
 my $help_about = <<EOF;
@@ -99,6 +100,7 @@ my $messages = {
   'queue_is_full'      => "[%_XDCC%_] The XDCC queue is currently full.",
   'queue_is_empty'     => "[%_XDCC%_] The XDCC queue is currently empty.",
   'no_files_offered'   => "[%_XDCC%_] Sorry, there's no warez today",
+  'illegal_index'      => "[%_XDCC%_] Bad index for batch request",
 
   'file_entry'         => '[%_XDCC%_] [%d] %s ... %s',
   'file_count'         => '[%_XDCC%_] %d file%s',
@@ -129,6 +131,7 @@ sub ctcp_reply {
   if ($disabled || $ctcp ne "xdcc") { return; }
      if ($cmd eq "get")     { xdcc_enqueue($server, $nick, $index) }
   elsif ($cmd eq "send")    { xdcc_enqueue($server, $nick, $index) }
+  elsif ($cmd eq "batch")   { xdcc_batch($server, $nick, $index) }
   elsif ($cmd eq "info")    { xdcc_info($server, $nick, $index) }
   elsif ($cmd eq "remove")  { xdcc_remove($server, $nick, $index) }
   elsif ($cmd eq "queue")   { xdcc_queue($server, $nick) }
@@ -176,6 +179,23 @@ sub xdcc_enqueue {
   }
   push(@queue, $request);
   xdcc_queue($server, $nick);
+}
+sub xdcc_batch {
+  my ($server, $nick, $index) = @_;
+  if ($index !~ /-/) {
+    xdcc_message( $server, $nick, 'illegal_index' );
+    return;
+  }
+  my ($from, $to) = split("-", $index, 2);
+  $from = int $from;
+  $to = int $to;
+  if ($from > $to || $from < 1 || $to < 1 || $from > @files || $to > @files) {
+    xdcc_message( $server, $nick, 'illegal_index' );
+    return;
+  }
+  for (var $i = $from; $i <= $to; $i++) {
+    xdcc_enqueue($server, $nick, $i);
+  }
 }
 sub xdcc_remove {
   my ($server, $nick, $index) = @_;
