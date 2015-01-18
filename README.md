@@ -1,7 +1,7 @@
 xdcc
 ====
 
-xdcc script for irssi
+XDCC server for irssi
 
-[read all about it](http://asdf.us/xdcc/)
+Read all about it &rarr; (http://asdf.us/xdcc/)
 
