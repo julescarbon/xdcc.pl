@@ -276,8 +276,8 @@ sub xdcc_delete {
   $id -= 1;
   if (xdcc_is_trusted($server, $nick)) {
     my $file = xdcc_del($index);
-    if ($file ) {
-      xdcc_message( $server, $nick, 'xdcc_deleted', $file->{id}+1, $file->{fn} );
+    if ($file) {
+      xdcc_message( $server, $nick, 'xdcc_deleted_file', $file->{id}+1, $file->{fn} );
     }
   }
 }

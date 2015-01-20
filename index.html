@@ -23,9 +23,9 @@ Download it here! &rarr; &rarr; &rarr; <a href="xdcc.pl" style="color:blue!impor
 -reset:    Reset the file list and the queue
 -stats:    Statistics for this session
 -enable:   Enable the XDCC server
+-disable:  Disable the XDCC server
 -trust:    Trust users from #channel to upload files
 -distrust: Stop trusting users on #channel
--disable:  Disable the XDCC server
 -help:     Display this help.</pre>
 
 Examples:
@@ -71,8 +71,14 @@ and also modify the XDCC offerings using these commands:
 <h3>Tips &amp; Tricks</h3>
 
 <ul>
-<li> Turn on DCC autoget, if you want to allow uplaods - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
+<li> Turn on DCC autoget, if you want to allow uploads - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
 <li> The script will look for files in <tt><i>dcc_upload_path</i></tt> which is usually your home directory.
+<li> If you're using the public fileserver, you'll probably want to use something other than your home directory.
+     Make sure the directory exists and that these are the same thing:
+  <ul>
+  <li> <tt><i>/set dcc_upload_path <b>~/dir</b></i></tt>
+  <li> <tt><i>/set dcc_download_path <b>~/dir</b></i></tt>
+  </ul>
 <li> Filenames must not contain spaces.
 <li> Absolute paths are fine, only the filename will be shown.
 </ul>
