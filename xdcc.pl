@@ -18,6 +18,7 @@ $VERSION = "1.0";
 
 my @files;
 my @queue;
+my @channels;
 
 my $queue_max = 99;
 my $bother_delay = 9999;
@@ -45,6 +46,7 @@ Usage:
 -reset:   Reset the file list and the queue
 -stats:   Statistics for this session
 -enable:  Enable/disable the XDCC server
+-trust:   Trust ops from a channel to upload files.
 -help:    Display this help.
 
 Examples:
@@ -55,8 +57,7 @@ Examples:
 For client commands, type:
 /ctcp <nickname> XDCC help
 
-Only one file will be sent at a time.
-Additional requests are added to a queue.
+Requests are queued, only one file will be sent at a time.
 Filenames must not contain spaces.
 EOF
 
@@ -70,7 +71,14 @@ my $help_remote = <<EOF;
 /ctcp %nick XDCC %_queue%_
 /ctcp %nick XDCC %_help%_
 /ctcp %nick XDCC %_about%_
+EOF
 
+my $help_control = <<EOF;
+Since you are opped on %s, you can upload files to the server.
+DCC send a file to %nick.
+
+/ctcp %nick XDCC %_describe%_ 5      # Set the description for a file
+/ctcp %nick XDCC %_delete%_ 5        # Delete something you uploaded.
 EOF
 
 my $help_about = <<EOF;
@@ -133,6 +141,8 @@ my $messages = {
 # Public XDCC request API
 sub ctcp_reply {
   my ($server, $data, $nick, $address, $target) = @_;
+
+  xdcc_is_trusted($server, $nick);
 
   my ($ctcp, $cmd, $index) = split (" ", lc($data), 3);
 
@@ -329,6 +339,14 @@ sub xdcc_report {
 }
 sub xdcc_stats {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', "xdcc.pl version", $VERSION);
+
+  my @channel_names = map { $->{'name'} } @channels;
+  if (scalar @channel_names) {
+    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'channels', join(' ', @channel_names));
+  }
+  else {
+    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'channels', 'none');
+  }
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', "files sent", $stats->{files_sent});
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_hr');
 
@@ -404,35 +422,92 @@ sub xdcc_reset {
   $sending = 0;
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_reset');
 }
+sub xdcc_log {
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', $_[0]);
+}
+
+# Trust ops from certain channels
+sub xdcc_trust {
+  my ($channel_name) = @_;
+  my $channel = Irssi::channel_find($channel_name);
+  if ($channel) {
+    xdcc_log("trusting ops on $channel_name");
+    push(@channels, $channel);
+  }
+  else {
+    xdcc_log("couldn't find channel $channel_name");
+  }
+}
+sub xdcc_distrust {
+  my ($channel_name) = @_;
+  for (my $i = $#channels; $i >= 0; $i--) {
+    if ($channels[$i]->{name} == $channel_name) {
+      my $channel = $channels[$i];
+      splice(@channels, $i, 1);
+      xdcc_log("stopped trusting $channel_name");
+      return
+    }
+  }
+  xdcc_log("couldn't find channel $channel_name");
+}
+sub xdcc_is_trusted {
+  my ($server, $nick) = @_;
+  my $user;
+  xdcc_log("looking up $nick");
+  for my $channel (@channels) {
+    if ($channel->{server}->{'name'} ne $server->{'name'}) {
+      # xdcc_log("didnt find $nick on server $server->{name}");
+      continue;
+    }
+    $user = $channel->nick_find($nick);
+    if ($user && $user->{op}) {
+      # xdcc_log("found $nick opped in $channel->{name}");
+      return 1;
+    }
+  }
+  # xdcc_log("$nick not found");
+  return 0;
+}
+
 sub xdcc_help {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_help', $help_local);
 }
-
 sub xdcc {
   my ($cmd, $fn, $desc) = split (" ", $_[0], 3);
 
   $cmd = lc($cmd);
   $cmd =~ s/^-//;
 
-     if ($cmd eq "add")     { xdcc_add($fn, $desc) }
-  elsif ($cmd eq "del")     { xdcc_del($fn) }
-  elsif ($cmd eq "list")    { xdcc_report() }
-  elsif ($cmd eq "reset")   { xdcc_reset() }
-  elsif ($cmd eq "stats")   { xdcc_stats() }
-  elsif ($cmd eq "enable")  { $disabled = 0 }
-  elsif ($cmd eq "disable") { $disabled = 1 }
-  elsif ($cmd eq "help")    { xdcc_help() }
-  elsif ($cmd eq "version") { xdcc_version() }
-   else                     { xdcc_report() }
+     if ($cmd eq "add")      { xdcc_add($fn, $desc) }
+  elsif ($cmd eq "del")      { xdcc_del($fn) }
+  elsif ($cmd eq "list")     { xdcc_report() }
+  elsif ($cmd eq "reset")    { xdcc_reset() }
+  elsif ($cmd eq "stats")    { xdcc_stats() }
+  elsif ($cmd eq "enable")   { $disabled = 0 }
+  elsif ($cmd eq "disable")  { $disabled = 1 }
+  elsif ($cmd eq "trust")    { xdcc_trust($fn) }
+  elsif ($cmd eq "distrust") { xdcc_distrust($fn) }
+  elsif ($cmd eq "help")     { xdcc_help() }
+  elsif ($cmd eq "version")  { xdcc_version() }
+   else                      { xdcc_report() }
 }
 
 # DCC management
 sub dcc_created {
   my ($dcc) = @_;
+  use Data::Dumper;
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', Dumper($dcc));
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc created');
-  if ($timeout) { Irssi::timeout_remove($timeout) }
-  $timeout = Irssi::timeout_add_once($bother_delay, \&xdcc_bother, { dcc => $dcc, times => 1 });
-  $current_dcc = $dcc;
+  if ($dcc->{'type'} eq "send") {
+    if ($timeout) { Irssi::timeout_remove($timeout) }
+    $timeout = Irssi::timeout_add_once($bother_delay, \&xdcc_bother, { dcc => $dcc, times => 1 });
+    #$current_dcc = $dcc;
+  }
+  elsif ($dcc->{'type'} eq "get") {
+    if (xdcc_is_trusted($dcc->{'nick'})) {
+      # what...
+    }
+  }
 }
 sub xdcc_bother {
   my ($data) = @_;
@@ -478,5 +553,5 @@ Irssi::signal_add('dcc rejecting',    'dcc_rejecting');
 Irssi::signal_add('dcc closed',       'dcc_closed');
 Irssi::signal_add('default ctcp msg', 'ctcp_reply');
 Irssi::command_bind('xdcc', 'xdcc');
-Irssi::command_set_options('xdcc','add del list stats enable disable reset help version');
+Irssi::command_set_options('xdcc','add del list stats enable disable reset trust distrust help version');
 Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'loaded', $IRSSI{name}, $VERSION, $IRSSI{authors});

@@ -3,10 +3,10 @@
 
 <h1>xdcc.pl</h1>
 
-XDCC script for <tt>irssi</tt>.
+XDCC server for <tt>irssi</tt>.
 <p>
 
-Run a fileserver. People can request DCC sends over CTCP.
+Run a fileserver. People can request DCC sends over CTCP. Trusted users can upload files.
 <p>
 
 Download it here! &rarr; &rarr; &rarr; <a href="xdcc.pl" style="color:blue!important"><i>xdcc.pl</i></a>
@@ -14,16 +14,19 @@ Download it here! &rarr; &rarr; &rarr; <a href="xdcc.pl" style="color:blue!impor
 
 <h2>Usage</h2>
 
-<pre>/XDCC [-add <i>filename</i> <i>description</i>] [-del <i>id</i>] [-list] [-stats] [-enable] [-disable] [-help]
+<pre>/XDCC [-add <i>filename</i> <i>description</i>] [-del <i>id</i>] [-list] [-stats]
+     [-enable] [-disable] [-trust <i>#channel</i>] [-distrust <i>#channel</i>] [-help]
 
--add:     Add a file to our XDCC server
--del:     Remove a file from the offerings
--list:    Display the XDCC list (default)
--reset:   Reset the file list and the queue
--stats:   Statistics for this session
--enable:  Enable the XDCC server
--disable: Disable the XDCC server
--help:    Display this help.</pre>
+-add:      Add a file to our XDCC server
+-del:      Remove a file from the offerings
+-list:     Display the XDCC list (default)
+-reset:    Reset the file list and the queue
+-stats:    Statistics for this session
+-enable:   Enable the XDCC server
+-trust:    Trust users from #channel to upload files
+-distrust: Stop trusting users on #channel
+-disable:  Disable the XDCC server
+-help:     Display this help.</pre>
 
 Examples:
 
@@ -31,6 +34,7 @@ Examples:
 /xdcc -add jollo.mp3 Distant cry of the Jollo, 5:43 am
 /xdcc -del 1
 /xdcc -stats</pre>
+/xdcc -trust #sally</pre>
 
 <h3>CTCP XDCC Interface</h3>
 
@@ -41,6 +45,8 @@ People can request files from you using these CTCP commands:
 /ctcp <i>nick</i> XDCC batch 2-4       <i># request multiple files</i>
 /ctcp <i>nick</i> XDCC remove 3        <i># remove from queue</i>
 /ctcp <i>nick</i> XDCC cancel          <i># cancel file transfer</i>
+/ctcp <i>nick</i> XDCC describe 1      <i># change a file description (with permission)</i>
+/ctcp <i>nick</i> XDCC delete 1        <i># stop offering a file (with permission)</i>
 /ctcp <i>nick</i> XDCC queue
 /ctcp <i>nick</i> XDCC help
 /ctcp <i>nick</i> XDCC about</pre>
