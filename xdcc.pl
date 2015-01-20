@@ -125,6 +125,9 @@ my $messages = {
   'sending_file'       => '[%_XDCC%_] Sending you [%d] %s ...!',
   'file_help_send'     => '[%_XDCC%_] Type %_/dcc get %nick%_ to accept the file',
 
+  'xdcc_added_file'    => '[%_XDCC%_] Added file [%_%d%_] %s',
+  'xdcc_describe'      => '[%_XDCC%_] Updated description for [%_%d%_] %s',
+
   'xdcc_final_warning' => '[%_XDCC%_] This is your last warning!',
   'xdcc_inactive'      => '[%_XDCC%_] The DCC transfer has been cancelled for inactivity.',
   'xdcc_removed'       => '[%_XDCC%_] Your request has been removed.',
@@ -144,21 +147,22 @@ sub ctcp_reply {
 
   xdcc_is_trusted($server, $nick);
 
-  my ($ctcp, $cmd, $index) = split (" ", lc($data), 3);
+  my ($ctcp, $cmd, $index, $desc) = split (" ", lc($data), 4);
 
   if ($disabled || $ctcp ne "xdcc") { return; }
-     if ($cmd eq "get")     { xdcc_enqueue($server, $nick, $index) }
-  elsif ($cmd eq "send")    { xdcc_enqueue($server, $nick, $index) }
-  elsif ($cmd eq "batch")   { xdcc_batch($server, $nick, $index) }
-  elsif ($cmd eq "info")    { xdcc_info($server, $nick, $index) }
-  elsif ($cmd eq "remove")  { xdcc_remove($server, $nick, $index) }
-  elsif ($cmd eq "cancel")  { xdcc_cancel($server, $nick) }
-  elsif ($cmd eq "queue")   { xdcc_queue($server, $nick) }
-  elsif ($cmd eq "list")    { xdcc_list($server, $nick) }
-  elsif ($cmd eq "version") { xdcc_message($server, $nick, 'xdcc_version') }
-  elsif ($cmd eq "help")    { xdcc_message($server, $nick, 'xdcc_help') }
-  elsif ($cmd eq "about")   { xdcc_message($server, $nick, 'xdcc_about') }
-  else                      { xdcc_list($server, $nick) }
+     if ($cmd eq "get")      { xdcc_enqueue($server, $nick, $index) }
+  elsif ($cmd eq "send")     { xdcc_enqueue($server, $nick, $index) }
+  elsif ($cmd eq "batch")    { xdcc_batch($server, $nick, $index) }
+  elsif ($cmd eq "info")     { xdcc_info($server, $nick, $index) }
+  elsif ($cmd eq "remove")   { xdcc_remove($server, $nick, $index) }
+  elsif ($cmd eq "cancel")   { xdcc_cancel($server, $nick) }
+  elsif ($cmd eq "queue")    { xdcc_queue($server, $nick) }
+  elsif ($cmd eq "list")     { xdcc_list($server, $nick) }
+  elsif ($cmd eq "describe") { xdcc_describe($server, $nick, $index, $desc) }
+  elsif ($cmd eq "version")  { xdcc_message($server, $nick, 'xdcc_version') }
+  elsif ($cmd eq "help")     { xdcc_message($server, $nick, 'xdcc_help') }
+  elsif ($cmd eq "about")    { xdcc_message($server, $nick, 'xdcc_about') }
+  else                       { xdcc_list($server, $nick) }
 
   Irssi::signal_stop();
 }
@@ -252,6 +256,15 @@ sub xdcc_cancel {
   if ($current_dcc && $current_dcc->{nick} eq $nick) {
     xdcc_message( $server, $nick, 'xdcc_cancelled' );
     $current_dcc->destroy();
+  }
+}
+sub xdcc_describe {
+  my ($server, $nick, $index, $desc) = @_;
+  my $id = int $index;
+  $id -= 1;
+  if (xdcc_is_trusted($nick)) {
+    my $file = $files[$id];
+    $file->{desc} = $desc;
   }
 }
 sub xdcc_info {
@@ -365,7 +378,7 @@ sub xdcc_stats {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_hr');
 }
 sub xdcc_add {
-  my ($path, $desc) = @_;
+  my ($path, $desc, $nick) = @_;
   if ($path !~ /^[\/~]/) {
     $path = $dcc_upload_path . "/" . $path;
   }
@@ -375,7 +388,7 @@ sub xdcc_add {
   }
   if (! -e $path) {
     Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_file_not_found');
-    return;
+    return 0;
   }
 
   my $fn = $path;
@@ -388,11 +401,14 @@ sub xdcc_add {
     fn => $fn,
     path => $path,
     desc => $desc,
+    nick => $nick,
   };
 
   push(@files, $file);
 
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_added_file', $id+1, $fn);
+
+  return $file;
 }
 sub xdcc_del {
   my ($id) = @_;
@@ -473,12 +489,13 @@ sub xdcc_help {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_help', $help_local);
 }
 sub xdcc {
-  my ($cmd, $fn, $desc) = split (" ", $_[0], 3);
+  my ($data, $server) = @_;
+  my ($cmd, $fn, $desc) = split (" ", $data, 3);
 
   $cmd = lc($cmd);
   $cmd =~ s/^-//;
 
-     if ($cmd eq "add")      { xdcc_add($fn, $desc) }
+     if ($cmd eq "add")      { xdcc_add($fn, $desc, $server->{nick}) }
   elsif ($cmd eq "del")      { xdcc_del($fn) }
   elsif ($cmd eq "list")     { xdcc_report() }
   elsif ($cmd eq "reset")    { xdcc_reset() }
@@ -496,13 +513,13 @@ sub xdcc {
 sub dcc_created {
   my ($dcc) = @_;
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc created');
-  if ($dcc->{'type'} eq "send") {
+  if (lc $dcc->{'type'} eq "send") {
     if ($timeout) { Irssi::timeout_remove($timeout) }
     $timeout = Irssi::timeout_add_once($bother_delay, \&xdcc_bother, { dcc => $dcc, times => 1 });
     #$current_dcc = $dcc;
   }
-  elsif ($dcc->{'type'} eq "get") {
-    if (xdcc_is_trusted($dcc->{'nick'})) {
+  elsif (lc $dcc->{'type'} eq "get") {
+    if (xdcc_is_trusted($dcc->{'server'}, $dcc->{'nick'})) {
       # all is well...
     }
     else {
@@ -533,11 +550,15 @@ sub xdcc_bother {
 sub dcc_destroyed {
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc destroyed');
   my ($dcc) = @_;
-  if ($dcc->{'type'} eq "send") {
+  if (lc $dcc->{'type'} eq "send") {
     $sending = 0;
     xdcc_advance();
   }
-  elsif ($dcc->{'type'} eq "get" && xdcc_is_trusted($dcc->{'nick'})) {
+  elsif (lc $dcc->{'type'} eq "get" && xdcc_is_trusted($dcc->{'server'}, $dcc->{'nick'})) {
+    my $file = xdcc_add($dcc->{'arg'}, "uploaded by $dcc->{'nick'}", $dcc->{'nick'});
+    if ($file) {
+      xdcc_message($dcc->{server}, $dcc->{nick}, 'xdcc_added_file', $file->{'id'}+1, $file->{'fn'});
+    }
   }
 }
 sub dcc_connected {
