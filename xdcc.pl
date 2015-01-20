@@ -495,8 +495,6 @@ sub xdcc {
 # DCC management
 sub dcc_created {
   my ($dcc) = @_;
-  use Data::Dumper;
-  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', Dumper($dcc));
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc created');
   if ($dcc->{'type'} eq "send") {
     if ($timeout) { Irssi::timeout_remove($timeout) }
@@ -505,7 +503,10 @@ sub dcc_created {
   }
   elsif ($dcc->{'type'} eq "get") {
     if (xdcc_is_trusted($dcc->{'nick'})) {
-      # what...
+      # all is well...
+    }
+    else {
+      $dcc->destroy();
     }
   }
 }
@@ -531,12 +532,21 @@ sub xdcc_bother {
 }
 sub dcc_destroyed {
   # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc destroyed');
-  $sending = 0;
-  xdcc_advance();
+  my ($dcc) = @_;
+  if ($dcc->{'type'} eq "send") {
+    $sending = 0;
+    xdcc_advance();
+  }
+  elsif ($dcc->{'type'} eq "get" && xdcc_is_trusted($dcc->{'nick'})) {
+  }
 }
 sub dcc_connected {
 #  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc connected');
-  if ($timeout) { Irssi::timeout_remove($timeout) }
+  my ($dcc) = @_;
+  if ($dcc->{'type'} eq "send" && $timeout) {
+    Irssi::timeout_remove($timeout);
+    undef $timeout;
+  }
 }
 sub dcc_rejecting {
 #  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc rejecting');
