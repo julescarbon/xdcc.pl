@@ -99,6 +99,7 @@ Irssi::theme_register([
   'xdcc_reset',          '[%_XDCC%_] Reset!',
   'xdcc_log',            '[%_XDCC%_] $0',
   'xdcc_stats',          '[%_XDCC%_] $0 ... %_$1%_',
+  'xdcc_autoget_tip',    '[%_XDCC%_] Tip: in irssi, type %_/set dcc_autoget ON%_',
 
   'xdcc_help', '$0',
   'xdcc_version', $help_about,
@@ -447,11 +448,18 @@ sub xdcc_trust {
   my ($channel_name) = @_;
   my $channel = Irssi::channel_find($channel_name);
   if ($channel) {
-    xdcc_log("trusting ops on $channel_name");
+    for my $c (@channels) {
+      if ($c->{'name'} eq $channel->{'name'}) {
+        xdcc_log("Already trusting ops on $channel_name");
+        return;
+      }
+    }
+    xdcc_log("Trusting ops on $channel_name");
+    # Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_autoget_tip');
     push(@channels, $channel);
   }
   else {
-    xdcc_log("couldn't find channel $channel_name");
+    xdcc_log("Couldn't find channel $channel_name (join it?)");
   }
 }
 sub xdcc_distrust {
@@ -460,11 +468,11 @@ sub xdcc_distrust {
     if ($channels[$i]->{name} == $channel_name) {
       my $channel = $channels[$i];
       splice(@channels, $i, 1);
-      xdcc_log("stopped trusting $channel_name");
+      xdcc_log("Stopped trusting $channel_name");
       return
     }
   }
-  xdcc_log("couldn't find channel $channel_name");
+  xdcc_log("Couldn't find channel $channel_name");
 }
 sub xdcc_is_trusted {
   my ($server, $nick) = @_;
