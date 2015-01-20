@@ -69,6 +69,7 @@ my $help_remote = <<EOF;
 /ctcp %nick XDCC %_remove%_ 3        # remove yourself from queue
 /ctcp %nick XDCC %_cancel%_          # cancel the current transfer
 /ctcp %nick XDCC %_queue%_
+/ctcp %nick XDCC %_stats%_
 /ctcp %nick XDCC %_help%_
 /ctcp %nick XDCC %_about%_
 EOF
@@ -136,7 +137,9 @@ my $messages = {
   'xdcc_autoget_tip'   => '[%_XDCC%_] Tip: in irssi, type %_/set dcc_autoget ON%_',
   'xdcc_cancelled'     => '[%_XDCC%_] File transfer cancelled',
 
+  'xdcc_stats'         => '[%_XDCC%_] %s ... %_%s%_',
   'xdcc_log'           => "[%_XDCC%_] %s",
+  'xdcc_hr'            => "[%_XDCC%_] ----",
   'xdcc_help'          => $help_remote,
   'xdcc_help_control'  => $help_control,
   'xdcc_about'         => $help_about,
@@ -159,6 +162,7 @@ sub ctcp_reply {
   elsif ($cmd eq "cancel")   { xdcc_cancel($server, $nick) }
   elsif ($cmd eq "queue")    { xdcc_queue($server, $nick) }
   elsif ($cmd eq "list")     { xdcc_list($server, $nick) }
+  elsif ($cmd eq "stats")    { xdcc_stats_remote($server, $nick) }
   elsif ($cmd eq "describe") { xdcc_describe($server, $nick, $index, $desc) }
   elsif ($cmd eq "version")  { xdcc_message($server, $nick, 'xdcc_version') }
   elsif ($cmd eq "help")     { xdcc_help($server, $nick) }
@@ -321,6 +325,31 @@ sub xdcc_queue {
     }
   }
   xdcc_message( $server, $nick, 'queue_length', scalar @queue, scalar @queue == 1 ? "" : "s" )
+}
+sub xdcc_stats_remote {
+  my ($server, $nick) = @_;
+  xdcc_message( $server, $nick, 'xdcc_stats', "xdcc.pl version", $VERSION);
+
+  if (xdcc_is_trusted($server, $nick)) {
+    my @channel_names = map { $_->{'name'} } @channels;
+    xdcc_message( $server, $nick, 'xdcc_stats', 'trusted channels', join(' ', @channel_names));
+  }
+  xdcc_message( $server, $nick, 'xdcc_stats', "files sent", $stats->{files_sent});
+  xdcc_message( $server, $nick, 'xdcc_hr');
+
+  xdcc_message( $server, $nick, 'xdcc_log', 'top files');
+  map  { xdcc_message( $server, $nick, 'xdcc_stats', $_->[0], $_->[1]) }
+  sort { $b->[1] <=> $a->[1] }
+  map  { [$_, $stats->{files}->{$_}] }
+  keys %{ $stats->{files} };
+  xdcc_message( $server, $nick, 'xdcc_hr');
+
+  xdcc_message( $server, $nick, 'xdcc_log', 'top users');
+  map  { xdcc_message( $server, $nick, 'xdcc_stats', $_->[0], $_->[1]) }
+  sort { $b->[1] <=> $a->[1] }
+  map  { [$_, $stats->{users}->{$_}] }
+  keys %{ $stats->{users} };
+  xdcc_message( $server, $nick, 'xdcc_hr');
 }
 sub xdcc_advance {
   if ($timeout) { Irssi::timeout_remove($timeout) }
