@@ -570,9 +570,10 @@ sub dcc_created {
   if (lc $dcc->{'type'} eq "send") {
     if ($timeout) { Irssi::timeout_remove($timeout) }
     $timeout = Irssi::timeout_add_once($bother_delay, \&xdcc_bother, { dcc => $dcc, times => 1 });
-    #$current_dcc = $dcc;
+    # xdcc_log("sending file..");
+    $current_dcc = $dcc;
   }
-  elsif (lc $dcc->{'type'} eq "get") {
+  elsif (lc $dcc->{'type'} eq "get" && scalar @channels) {
     if (xdcc_is_trusted($dcc->{'server'}, $dcc->{'nick'})) {
       # all is well...
     }
@@ -618,7 +619,7 @@ sub dcc_destroyed {
 sub dcc_connected {
 #  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_log', 'dcc connected');
   my ($dcc) = @_;
-  if ($dcc->{'type'} eq "send" && $timeout) {
+  if (lc $dcc->{'type'} eq "send" && $timeout) {
     Irssi::timeout_remove($timeout);
     undef $timeout;
   }
