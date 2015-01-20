@@ -29,27 +29,35 @@ Download it here! &rarr; &rarr; &rarr; <a href="xdcc.pl" style="color:blue!impor
 -help:     Display this help.</pre>
 
 Examples:
+<p>
 
 <pre>/xdcc -add sally.gif Jollo in his native habitat :)
 /xdcc -add jollo.mp3 Distant cry of the Jollo, 5:43 am
 /xdcc -del 1
-/xdcc -stats</pre>
+/xdcc -stats
 /xdcc -trust #sally</pre>
 
 <h3>CTCP XDCC Interface</h3>
 
 People can request files from you using these CTCP commands:
+<p>
 
 <pre>/ctcp <i>nick</i> XDCC list
 /ctcp <i>nick</i> XDCC get 1
 /ctcp <i>nick</i> XDCC batch 2-4       <i># request multiple files</i>
 /ctcp <i>nick</i> XDCC remove 3        <i># remove from queue</i>
 /ctcp <i>nick</i> XDCC cancel          <i># cancel file transfer</i>
-/ctcp <i>nick</i> XDCC describe 1      <i># change a file description (with permission)</i>
-/ctcp <i>nick</i> XDCC delete 1        <i># stop offering a file (with permission)</i>
 /ctcp <i>nick</i> XDCC queue
 /ctcp <i>nick</i> XDCC help
 /ctcp <i>nick</i> XDCC about</pre>
+
+<h3>Uploading Files</h3>
+
+If you are opped on a trusted channel, you can upload files via DCC -- <tt>/dcc send <i>nick</i> <i>filename</i></tt> --
+and also modify the XDCC offerings using these commands:
+
+<pre>/ctcp <i>nick</i> XDCC describe 1 blablabla    <i># change a file description</i>
+/ctcp <i>nick</i> XDCC delete 1                <i># stop offering a file</i></pre>
 
 <h3>Queue</h3>
 
@@ -62,7 +70,7 @@ People can request files from you using these CTCP commands:
 <h3>Tips &amp; Tricks</h3>
 
 <ul>
-<li> Turn on DCC autoget - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
+<li> Turn on DCC autoget, if you want to allow uplaods - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
 <li> The script will look for files in <tt><i>dcc_upload_path</i></tt> which is usually your home directory.
 <li> Filenames must not contain spaces.
 <li> Absolute paths are fine, only the filename will be shown.

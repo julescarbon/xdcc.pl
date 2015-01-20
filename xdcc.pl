@@ -74,9 +74,8 @@ my $help_remote = <<EOF;
 EOF
 
 my $help_control = <<EOF;
-Since you are opped on %s, you can upload files to the server.
-DCC send a file to %nick.
-
+ 
+To upload a file, %_/dcc send %nick filename%_
 /ctcp %nick XDCC %_describe%_ 5      # Set the description for a file
 /ctcp %nick XDCC %_delete%_ 5        # Delete something you uploaded.
 EOF
@@ -127,7 +126,8 @@ my $messages = {
   'file_help_send'     => '[%_XDCC%_] Type %_/dcc get %nick%_ to accept the file',
 
   'xdcc_added_file'    => '[%_XDCC%_] Added file [%_%d%_] %s',
-  'xdcc_describe'      => '[%_XDCC%_] Updated description for [%_%d%_] %s',
+  'xdcc_deleted_file'  => '[%_XDCC%_] Deleted file [%_%d%_] %s',
+  'xdcc_described'     => '[%_XDCC%_] Updated description for [%_%d%_] %s',
 
   'xdcc_final_warning' => '[%_XDCC%_] This is your last warning!',
   'xdcc_inactive'      => '[%_XDCC%_] The DCC transfer has been cancelled for inactivity.',
@@ -138,6 +138,7 @@ my $messages = {
 
   'xdcc_log'           => "[%_XDCC%_] %s",
   'xdcc_help'          => $help_remote,
+  'xdcc_help_control'  => $help_control,
   'xdcc_about'         => $help_about,
   'xdcc_version'       => "[%_XDCC%_] v$VERSION",
 };
@@ -145,8 +146,6 @@ my $messages = {
 # Public XDCC request API
 sub ctcp_reply {
   my ($server, $data, $nick, $address, $target) = @_;
-
-  xdcc_is_trusted($server, $nick);
 
   my ($ctcp, $cmd, $index, $desc) = split (" ", lc($data), 4);
 
@@ -156,12 +155,13 @@ sub ctcp_reply {
   elsif ($cmd eq "batch")    { xdcc_batch($server, $nick, $index) }
   elsif ($cmd eq "info")     { xdcc_info($server, $nick, $index) }
   elsif ($cmd eq "remove")   { xdcc_remove($server, $nick, $index) }
+  elsif ($cmd eq "delete")   { xdcc_delete($server, $nick, $index) }
   elsif ($cmd eq "cancel")   { xdcc_cancel($server, $nick) }
   elsif ($cmd eq "queue")    { xdcc_queue($server, $nick) }
   elsif ($cmd eq "list")     { xdcc_list($server, $nick) }
   elsif ($cmd eq "describe") { xdcc_describe($server, $nick, $index, $desc) }
   elsif ($cmd eq "version")  { xdcc_message($server, $nick, 'xdcc_version') }
-  elsif ($cmd eq "help")     { xdcc_message($server, $nick, 'xdcc_help') }
+  elsif ($cmd eq "help")     { xdcc_help($server, $nick) }
   elsif ($cmd eq "about")    { xdcc_message($server, $nick, 'xdcc_about') }
   else                       { xdcc_list($server, $nick) }
 
@@ -176,6 +176,13 @@ sub xdcc_message {
     $msg =~ s/%nick/$server->{nick}/g;
     $msg = sprintf $msg, @params;
     $server->send_message( $nick, $msg, 1 );
+  }
+}
+sub xdcc_help {
+  my ($server, $nick) = @_;
+  xdcc_message($server, $nick, 'xdcc_help');
+  if (xdcc_is_trusted($server, $nick)) {
+    xdcc_message($server, $nick, 'xdcc_help_control');
   }
 }
 sub xdcc_enqueue {
@@ -259,13 +266,25 @@ sub xdcc_cancel {
     $current_dcc->destroy();
   }
 }
+sub xdcc_delete {
+  my ($server, $nick, $index, $desc) = @_;
+  my $id = int $index;
+  $id -= 1;
+  if (xdcc_is_trusted($server, $nick)) {
+    my $file = xdcc_del($index);
+    if ($file ) {
+      xdcc_message( $server, $nick, 'xdcc_deleted', $file->{id}+1, $file->{fn} );
+    }
+  }
+}
 sub xdcc_describe {
   my ($server, $nick, $index, $desc) = @_;
   my $id = int $index;
   $id -= 1;
-  if (xdcc_is_trusted($nick)) {
+  if (xdcc_is_trusted($server, $nick)) {
     my $file = $files[$id];
     $file->{desc} = $desc;
+    xdcc_message( $server, $nick, 'xdcc_described', $file->{id}+1, $file->{'fn'} );
   }
 }
 sub xdcc_info {
@@ -354,12 +373,12 @@ sub xdcc_report {
 sub xdcc_stats {
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', "xdcc.pl version", $VERSION);
 
-  my @channel_names = map { $->{'name'} } @channels;
+  my @channel_names = map { $_->{'name'} } @channels;
   if (scalar @channel_names) {
-    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'channels', join(' ', @channel_names));
+    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'trusted channels', join(' ', @channel_names));
   }
   else {
-    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'channels', 'none');
+    Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'trusted channels', 'none');
   }
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', "files sent", $stats->{files_sent});
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_hr');
@@ -414,6 +433,10 @@ sub xdcc_add {
 sub xdcc_del {
   my ($id) = @_;
   $id = (int $id) - 1;
+  if ($id < 0 || $id > scalar @files) {
+    xdcc_log( 'No file with index $id' );
+    return 0;
+  }
   my $file = $files[$id];
   my $req;
 
@@ -431,6 +454,7 @@ sub xdcc_del {
   }
 
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_removed_file', $id+1, $file->{fn});
+  return $file;
 }
 sub xdcc_reset {
   @files = ();
@@ -477,25 +501,18 @@ sub xdcc_distrust {
 sub xdcc_is_trusted {
   my ($server, $nick) = @_;
   my $user;
-  xdcc_log("looking up $nick");
   for my $channel (@channels) {
     if ($channel->{server}->{'name'} ne $server->{'name'}) {
-      # xdcc_log("didnt find $nick on server $server->{name}");
       continue;
     }
     $user = $channel->nick_find($nick);
     if ($user && $user->{op}) {
-      # xdcc_log("found $nick opped in $channel->{name}");
       return 1;
     }
   }
-  # xdcc_log("$nick not found");
   return 0;
 }
 
-sub xdcc_help {
-  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_help', $help_local);
-}
 sub xdcc {
   my ($data, $server) = @_;
   my ($cmd, $fn, $desc) = split (" ", $data, 3);
@@ -512,7 +529,7 @@ sub xdcc {
   elsif ($cmd eq "disable")  { $disabled = 1 }
   elsif ($cmd eq "trust")    { xdcc_trust($fn) }
   elsif ($cmd eq "distrust") { xdcc_distrust($fn) }
-  elsif ($cmd eq "help")     { xdcc_help() }
+  elsif ($cmd eq "help")     { Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_help', $help_local) }
   elsif ($cmd eq "version")  { xdcc_version() }
    else                      { xdcc_report() }
 }
