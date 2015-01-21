@@ -293,9 +293,9 @@ sub xdcc_describe {
 }
 sub xdcc_info_remote {
   my ($server, $nick, $index) = @_;
-  my $info = xdcc_get_info(index);
+  my $info = xdcc_get_info($index);
   if (! $info) { return; }
-  xdcc_message( $server, $nick, 'xdcc_stats', '#', $info->{id} );
+  xdcc_message( $server, $nick, 'xdcc_stats', '   #', $info->{id} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'name', $info->{name} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'date', $info->{date} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'size', $info->{size} );
@@ -303,9 +303,9 @@ sub xdcc_info_remote {
 }
 sub xdcc_info {
   my ($index) = @_;
-  my $info = xdcc_get_info(index);
+  my $info = xdcc_get_info($index);
   if (! $info) { return; }
-  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', '#', $info->{id} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', '   #', $info->{id} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'name', $info->{name} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'date', $info->{date} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'size', $info->{size} );
@@ -328,15 +328,15 @@ sub xdcc_get_info {
   
   my $bytes;
   if ($size < 1024) { $bytes = $size + " b." }
-  elsif ($size < 1024*1024) { $bytes = floor($size/1024) + " kb." }
-  elsif ($size < 1024*1024*1024) { $bytes = sprintf("%0.1d",floor((10*$size)/(1024*1024))) + " kb." }
+  elsif ($size < 1024*1024) { $bytes = int($size/1024) + " kb." }
+  elsif ($size < 1024*1024*1024) { $bytes = sprintf("%0.1d",int((10*$size)/(1024*1024))) + " kb." }
 
   return {
     id => $id+1,
     name => $file->{fn},
     nick => $file->{nick},
     date => $ymd,
-    size => $size,
+    size => $bytes,
     desc => $file->{desc},
   }
 }
