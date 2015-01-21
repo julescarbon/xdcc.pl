@@ -10,7 +10,7 @@ $VERSION = "1.0";
   authors     => 'Julie LaLa',
   contact     => 'ryz@asdf.us',
   name        => 'xdcc.pl',
-  description => 'This script sets up a little XDCC server.',
+  description => 'Run an XDCC file server from irssi.',
   license     => 'Jollo LNT license',
   url         => 'http://asdf.us/xdcc/',
   changed     => 'Tue Jan 21 09:57:55 EST 2015',
@@ -173,7 +173,7 @@ sub ctcp_reply {
 }
 sub xdcc_message {
   my ($server, $nick, $msgname, @params) = @_;
-  my (@msgs) = split ("\n", $messages->{$msgname});
+  my (@msgs) = split (/\n/, $messages->{$msgname});
   for my $msg (@msgs) {
     $msg =~ s/%_/\x02/g;
     $msg =~ s/%-/\x03/g;
@@ -231,7 +231,7 @@ sub xdcc_batch {
     xdcc_message( $server, $nick, 'specify_range', scalar @files );
     return;
   }
-  my ($from, $to) = split("-", $index, 2);
+  my ($from, $to) = split(/-/, $index, 2);
   $from = int $from;
   $to = int $to;
   if ($from >= $to || $from < 1 || $to < 1 || $from > @files || $to > @files) {
@@ -321,13 +321,13 @@ sub xdcc_get_info {
   my $file = $files[$id];
 
   my @stats = stat($file->{path});
-  my $size = $stats[7];
+  my $size = int $stats[7];
   my $date = $stats[9];
 
   my ($m,$h,$d,$n,$y) = (localtime $date)[1..5];
   my @months = qw[Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec];
   my $ymd = sprintf "%d-%s-%d %d:%02d", $d, $months[$n], 1900+$y, $h, $m;
-  
+
   my $bytes;
   if ($size < 1024) { $bytes = $size + " b." }
   elsif ($size < 1024*1024) { $bytes = int($size/1024) + " kb." }
