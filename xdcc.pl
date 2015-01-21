@@ -13,7 +13,7 @@ $VERSION = "1.0";
   description => 'This script sets up a little XDCC server.',
   license     => 'Jollo LNT license',
   url         => 'http://asdf.us/xdcc/',
-  changed     => 'Tue Jan 20 01:09:35 EST 2015',
+  changed     => 'Tue Jan 21 09:57:55 EST 2015',
 );
 
 my @files;
