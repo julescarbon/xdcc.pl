@@ -81,10 +81,10 @@ and also modify the XDCC offerings using these commands:
 <li> Turn on DCC autoget, if you want to allow uploads - <tt><i>/set dcc_autoget <b>ON</b></i></tt>
 <li> The script will look for files in <tt><i>dcc_upload_path</i></tt> which is usually your home directory.
 <li> If you're using the public fileserver, you'll probably want to use something other than your home directory.
-     Make sure the directory exists and that these are the same thing:
+     Create e.g. <tt><b>~/xdcc_server/</b></tt> and set these to the same:
   <ul>
-  <li> <tt><i>/set dcc_upload_path <b>~/dir</b></i></tt>
-  <li> <tt><i>/set dcc_download_path <b>~/dir</b></i></tt>
+  <li> <tt><i>/set dcc_upload_path <b>~/xdcc_server</b></i></tt>
+  <li> <tt><i>/set dcc_download_path <b>~/xdcc_server</b></i></tt>
   </ul>
 <li> Filenames must not contain spaces.
 <li> Absolute paths are fine. Only the filename will be shown.
