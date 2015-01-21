@@ -576,7 +576,7 @@ sub xdcc_is_trusted {
   my $user;
   for my $channel (@channels) {
     if ($channel->{server}->{'name'} ne $server->{'name'}) {
-      continue;
+      next;
     }
     $user = $channel->nick_find($nick);
     if ($user && $user->{op}) {
