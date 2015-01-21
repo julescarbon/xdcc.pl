@@ -297,6 +297,7 @@ sub xdcc_info_remote {
   if (! $info) { return; }
   xdcc_message( $server, $nick, 'xdcc_stats', '   #', $info->{id} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'name', $info->{name} );
+  xdcc_message( $server, $nick, 'xdcc_stats', 'nick', $info->{nick} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'date', $info->{date} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'size', $info->{size} );
   xdcc_message( $server, $nick, 'xdcc_stats', 'desc', $info->{desc} );
@@ -307,6 +308,7 @@ sub xdcc_info {
   if (! $info) { return; }
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', '   #', $info->{id} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'name', $info->{name} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'nick', $info->{nick} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'date', $info->{date} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'size', $info->{size} );
   Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'desc', $info->{desc} );
