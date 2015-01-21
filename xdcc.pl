@@ -156,7 +156,7 @@ sub ctcp_reply {
      if ($cmd eq "get")      { xdcc_enqueue($server, $nick, $index) }
   elsif ($cmd eq "send")     { xdcc_enqueue($server, $nick, $index) }
   elsif ($cmd eq "batch")    { xdcc_batch($server, $nick, $index) }
-  elsif ($cmd eq "info")     { xdcc_info($server, $nick, $index) }
+  elsif ($cmd eq "info")     { xdcc_info_remote($server, $nick, $index) }
   elsif ($cmd eq "remove")   { xdcc_remove($server, $nick, $index) }
   elsif ($cmd eq "delete")   { xdcc_delete($server, $nick, $index) }
   elsif ($cmd eq "cancel")   { xdcc_cancel($server, $nick) }
@@ -291,12 +291,54 @@ sub xdcc_describe {
     xdcc_message( $server, $nick, 'xdcc_described', $file->{id}+1, $file->{'fn'} );
   }
 }
-sub xdcc_info {
+sub xdcc_info_remote {
   my ($server, $nick, $index) = @_;
+  my $info = xdcc_get_info(index);
+  if (! $info) { return; }
+  xdcc_message( $server, $nick, 'xdcc_stats', '#', $info->{id} );
+  xdcc_message( $server, $nick, 'xdcc_stats', 'name', $info->{name} );
+  xdcc_message( $server, $nick, 'xdcc_stats', 'date', $info->{date} );
+  xdcc_message( $server, $nick, 'xdcc_stats', 'size', $info->{size} );
+  xdcc_message( $server, $nick, 'xdcc_stats', 'desc', $info->{desc} );
+}
+sub xdcc_info {
+  my ($index) = @_;
+  my $info = xdcc_get_info(index);
+  if (! $info) { return; }
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', '#', $info->{id} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'name', $info->{name} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'date', $info->{date} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'size', $info->{size} );
+  Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'xdcc_stats', 'desc', $info->{desc} );
+}
+sub xdcc_get_info {
+  my ($index) = @_;
   my $id = int $index;
-  return if (! $id);
+  return if ($id < 1 || $id > scalar @files);
   $id -= 1;
-  # get stat data
+  my $file = $files[$id];
+
+  my @stats = stat($file->{path});
+  my $size = $stats[7];
+  my $date = $stats[9];
+
+  my ($m,$h,$d,$n,$y) = (localtime $date)[1..5];
+  my @months = qw[Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec];
+  my $ymd = sprintf "%d-%s-%d %d:%02d", $d, $months[$n], 1900+$y, $h, $m;
+  
+  my $bytes;
+  if ($size < 1024) { $bytes = $size + " b." }
+  elsif ($size < 1024*1024) { $bytes = floor($size/1024) + " kb." }
+  elsif ($size < 1024*1024*1024) { $bytes = sprintf("%0.1d",floor((10*$size)/(1024*1024))) + " kb." }
+
+  return {
+    id => $id+1,
+    name => $file->{fn},
+    nick => $file->{nick},
+    date => $ymd,
+    size => $size,
+    desc => $file->{desc},
+  }
 }
 sub xdcc_list {
   my ($server, $nick) = @_;
@@ -551,6 +593,7 @@ sub xdcc {
 
      if ($cmd eq "add")      { xdcc_add($fn, $desc, $server->{nick}) }
   elsif ($cmd eq "del")      { xdcc_del($fn) }
+  elsif ($cmd eq "info")     { xdcc_info($fn) }
   elsif ($cmd eq "list")     { xdcc_report() }
   elsif ($cmd eq "reset")    { xdcc_reset() }
   elsif ($cmd eq "stats")    { xdcc_stats() }
